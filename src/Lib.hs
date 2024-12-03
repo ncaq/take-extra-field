@@ -66,16 +66,15 @@ benchLookup :: IO ()
 benchLookup = do
   pool <- getPool
   defaultMain
-    [ bgroup "lookupUserRelation"
-      [ bench "user 1" $ whnfIO $ runPoolDB pool $ lookupUserRelation (toSqlKey 1)
-      , bench "user 500000" $ whnfIO $ runPoolDB pool $ lookupUserRelation (toSqlKey 500000)
-      , bench "user 1000000" $ whnfIO $ runPoolDB pool $ lookupUserRelation (toSqlKey 1000000)
+    [ bgroup "lookupUsers"
+      [ bench "users 1-10" $ whnfIO $ runPoolDB pool $ lookupUsers (toSqlKey <$> [1..10])
+      , bench "users 500000-500010" $ whnfIO $ runPoolDB pool $ lookupUsers (toSqlKey <$> [500000..500010])
+      , bench "users 999990-1000000" $ whnfIO $ runPoolDB pool $ lookupUsers (toSqlKey <$> [999990..1000000])
       ]
     ]
 
-lookupUserRelation :: (BaseBackend backend ~ SqlBackend, MonadIO m, PersistUniqueRead backend) => UserId -> ReaderT backend m (Maybe User, Maybe (Entity UserExtraInt))
-lookupUserRelation userId = do
-  user <- get userId
-  cost <- getBy $ UniqueUserIdName userId "cost"
-  return (user, cost)
-  -- get userId
+lookupUsers :: (BaseBackend backend ~ SqlBackend, PersistQueryRead backend, MonadIO m) => [UserId] -> ReaderT backend m ([Entity User], [Entity UserExtraInt])
+lookupUsers userIds = do
+  users <- selectList [UserId <-. userIds] []
+  costs <- selectList [UserExtraIntUserId <-. userIds, UserExtraIntName ==. "cost"] []
+  return (users, costs)
