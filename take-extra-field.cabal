@@ -1,0 +1,155 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.37.0.
+--
+-- see: https://github.com/sol/hpack
+
+name:           take-extra-field
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/ncaq/take-extra-field#readme>
+homepage:       https://github.com/ncaq/take-extra-field#readme
+bug-reports:    https://github.com/ncaq/take-extra-field/issues
+author:         ncaq
+maintainer:     ncaq@ncaq.net
+copyright:      2024 ncaq
+license:        BSD-3-Clause
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/ncaq/take-extra-field
+
+library
+  exposed-modules:
+      Lib
+      Model
+  other-modules:
+      Paths_take_extra_field
+  autogen-modules:
+      Paths_take_extra_field
+  hs-source-dirs:
+      src
+  default-extensions:
+      DataKinds
+      DefaultSignatures
+      FunctionalDependencies
+      GADTs
+      LambdaCase
+      MultiWayIf
+      OverloadedStrings
+      PartialTypeSignatures
+      RecordWildCards
+      TypeFamilies
+      ViewPatterns
+      DerivingStrategies
+      DerivingVia
+      DuplicateRecordFields
+      NoFieldSelectors
+      QuasiQuotes
+      StrictData
+      TemplateHaskell
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -j
+  build-depends:
+      base >=4.7 && <5
+    , criterion
+    , monad-logger
+    , mtl
+    , persistent
+    , persistent-postgresql
+    , random
+    , resource-pool
+    , resourcet
+    , text
+    , unliftio
+  default-language: GHC2021
+
+executable take-extra-field-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_take_extra_field
+  autogen-modules:
+      Paths_take_extra_field
+  hs-source-dirs:
+      app
+  default-extensions:
+      DataKinds
+      DefaultSignatures
+      FunctionalDependencies
+      GADTs
+      LambdaCase
+      MultiWayIf
+      OverloadedStrings
+      PartialTypeSignatures
+      RecordWildCards
+      TypeFamilies
+      ViewPatterns
+      DerivingStrategies
+      DerivingVia
+      DuplicateRecordFields
+      NoFieldSelectors
+      QuasiQuotes
+      StrictData
+      TemplateHaskell
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -j -threaded -rtsopts -with-rtsopts=-N -O2
+  build-depends:
+      base >=4.7 && <5
+    , criterion
+    , monad-logger
+    , mtl
+    , persistent
+    , persistent-postgresql
+    , random
+    , resource-pool
+    , resourcet
+    , take-extra-field
+    , text
+    , unliftio
+  default-language: GHC2021
+
+test-suite take-extra-field-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_take_extra_field
+  autogen-modules:
+      Paths_take_extra_field
+  hs-source-dirs:
+      test
+  default-extensions:
+      DataKinds
+      DefaultSignatures
+      FunctionalDependencies
+      GADTs
+      LambdaCase
+      MultiWayIf
+      OverloadedStrings
+      PartialTypeSignatures
+      RecordWildCards
+      TypeFamilies
+      ViewPatterns
+      DerivingStrategies
+      DerivingVia
+      DuplicateRecordFields
+      NoFieldSelectors
+      QuasiQuotes
+      StrictData
+      TemplateHaskell
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -j -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , criterion
+    , monad-logger
+    , mtl
+    , persistent
+    , persistent-postgresql
+    , random
+    , resource-pool
+    , resourcet
+    , take-extra-field
+    , text
+    , unliftio
+  default-language: GHC2021

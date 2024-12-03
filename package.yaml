@@ -1,0 +1,93 @@
+name: take-extra-field
+version: 0.1.0.0
+github: "ncaq/take-extra-field"
+license: BSD-3-Clause
+author: "ncaq"
+maintainer: "ncaq@ncaq.net"
+copyright: "2024 ncaq"
+
+extra-source-files:
+  - README.md
+  - CHANGELOG.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description: Please see the README on GitHub at <https://github.com/ncaq/take-extra-field#readme>
+
+dependencies:
+  - base >= 4.7 && < 5
+  - criterion
+  - monad-logger
+  - mtl
+  - persistent
+  - persistent-postgresql
+  - random
+  - resource-pool
+  - resourcet
+  - text
+  - unliftio
+
+language: GHC2021
+
+default-extensions:
+  # RIOが推奨する言語拡張のうち、GHC2021に含まれないもの。
+  - DataKinds
+  - DefaultSignatures
+  - FunctionalDependencies
+  - GADTs
+  - LambdaCase
+  - MultiWayIf
+  - OverloadedStrings
+  - PartialTypeSignatures
+  - RecordWildCards
+  - TypeFamilies
+  - ViewPatterns
+  # このプロジェクトで全てのモジュールで有効になって構わないと決めた言語拡張。
+  - DerivingStrategies
+  - DerivingVia
+  - DuplicateRecordFields
+  - NoFieldSelectors
+  - QuasiQuotes
+  - StrictData
+  - TemplateHaskell
+
+ghc-options:
+  - -Wall
+  - -Wcompat
+  - -Widentities
+  - -Wincomplete-record-updates
+  - -Wincomplete-uni-patterns
+  - -Wpartial-fields
+  - -Wredundant-constraints
+  - -j
+
+library:
+  source-dirs: src
+
+executables:
+  take-extra-field-exe:
+    main: Main.hs
+    source-dirs: app
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+      - -O2
+    dependencies:
+      - take-extra-field
+
+tests:
+  take-extra-field-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options:
+      - -threaded
+      - -rtsopts
+      - -with-rtsopts=-N
+    dependencies:
+      - take-extra-field
