@@ -4,13 +4,14 @@ module Lib
     , benchLookup
     ) where
 
-import           Data.Aeson
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Resource
 import           Criterion.Main
-import qualified Data.Text                    as T
+import           Data.Aeson
+import qualified Data.Text                          as T
+import           Database.Esqueleto.PostgreSQL.JSON
 import           Database.Persist
 import           Database.Persist.Postgresql
 import           Model
@@ -53,7 +54,7 @@ seed = do
 -- | 抽象から具体的なデータ生成。
 -- 別テーブル方式とJSON方式で実装が異なる。
 mkUser :: (Int, Int, Int) -> User
-mkUser (i, age, cost) = User ("User" <> T.pack (show i)) age (object ["cost" .= cost])
+mkUser (i, age, cost) = User ("User" <> T.pack (show i)) age (JSONB (object ["cost" .= cost]))
 
 benchLookup :: IO ()
 benchLookup =

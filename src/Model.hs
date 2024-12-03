@@ -3,14 +3,14 @@ module Model where
 
 import           Data.Aeson
 import           Data.Text
-import           Database.Persist.Postgresql.JSON ()
+import           Database.Esqueleto.PostgreSQL.JSON
 import           Database.Persist.TH
 
 share [mkPersist sqlSettings, mkMigrate "migrateAll"] [persistLowerCase|
 User
     name Text
     age Int
-    value Value
+    extraField (JSONB Value)
     UniqueUserName name
     deriving Show
 |]
