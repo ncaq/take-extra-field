@@ -12,8 +12,11 @@ import           Criterion.Main
 import           Data.Aeson
 import           Data.Pool
 import qualified Data.Text                          as T
-import           Database.Esqueleto.PostgreSQL.JSON
-import           Database.Persist.Postgresql
+import           Database.Esqueleto.Experimental    as E
+import           Database.Esqueleto.PostgreSQL.JSON as J
+import           Database.Persist.Postgresql        (ConnectionString,
+                                                     createPostgresqlPool,
+                                                     withPostgresqlPool)
 import           Model
 import           System.Random
 
@@ -78,12 +81,17 @@ benchLookup :: IO ()
 benchLookup = do
   pool <- getPool
   defaultMain
-    [ bgroup "lookupUsersJson"
-      [ bench "users 1-10" $ whnfIO $ runPoolDB pool $ lookupUsersJson (toSqlKey <$> [1..10])
-      , bench "users 500000-500010" $ whnfIO $ runPoolDB pool $ lookupUsersJson (toSqlKey <$> [500000..500010])
-      , bench "users 999990-1000000" $ whnfIO $ runPoolDB pool $ lookupUsersJson (toSqlKey <$> [999990..1000000])
+    -- [ bgroup "lookupUsersJson"
+    --   [ bench "users 1-10" $ whnfIO $ runPoolDB pool $ lookupUsersJson (toSqlKey <$> [1..10])
+    --   , bench "users 500000-500010" $ whnfIO $ runPoolDB pool $ lookupUsersJson (toSqlKey <$> [500000..500010])
+    --   , bench "users 999990-1000000" $ whnfIO $ runPoolDB pool $ lookupUsersJson (toSqlKey <$> [999990..1000000])
+    --   ]
+    -- ]
+    [ bgroup "lookupUsersByJsonCost"
+      [ bench "cost 10-20" $ whnfIO $ runPoolDB pool lookupUsersByJsonCost
       ]
     ]
+
 
 -- lookupUsersRelation :: (BaseBackend backend ~ SqlBackend, PersistQueryRead backend, MonadIO m) => [UserId] -> ReaderT backend m ([Entity User], [Entity UserExtraInt])
 -- lookupUsersRelation userIds = do
@@ -91,5 +99,12 @@ benchLookup = do
 --   costs <- selectList [UserExtraIntUserId <-. userIds, UserExtraIntName ==. "cost"] []
 --   return (users, costs)
 
-lookupUsersJson :: (BaseBackend backend ~ SqlBackend, PersistQueryRead backend, MonadIO m) => [UserId] -> ReaderT backend m [Entity User]
-lookupUsersJson userIds = selectList [UserId <-. userIds] []
+-- lookupUsersJson :: (BaseBackend backend ~ SqlBackend, PersistQueryRead backend, MonadIO m) => [UserId] -> ReaderT backend m [Entity User]
+-- lookupUsersJson userIds = selectList [UserId <-. userIds] []
+
+lookupUsersByJsonCost :: ReaderT SqlBackend (NoLoggingT (ResourceT IO)) [Entity User]
+lookupUsersByJsonCost = select $ do
+  user <- from $ table @User
+  let juser = just $ user ^. UserExtraField
+  where_ (juser J.->. ("cost" :: JSONAccessor) J.@>. jsonbVal (10 :: Int))
+  return user
