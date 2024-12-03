@@ -9,13 +9,11 @@ import           Control.Monad.Logger
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Resource
 import           Criterion.Main
-import           Data.Aeson
 import qualified Data.Text                          as T
-import           Database.Esqueleto.PostgreSQL.JSON
-import           Database.Persist
 import           Database.Persist.Postgresql
 import           Model
 import           System.Random
+import UnliftIO
 
 someFunc :: IO ()
 -- someFunc = runSeed
@@ -25,48 +23,52 @@ connStr :: ConnectionString
 connStr = "host=localhost port=5432 user=test dbname=test password=test"
 
 runLogDB :: MonadUnliftIO m => ReaderT SqlBackend (NoLoggingT (ResourceT IO)) a -> m a
-runLogDB action = runStderrLoggingT $ withPostgresqlPool connStr 32 (liftIO . runSqlPersistMPool action)
+runLogDB action = runStderrLoggingT $ withPostgresqlPool connStr 1 (liftIO . runSqlPersistMPool action)
 
 runDB :: MonadUnliftIO m => ReaderT SqlBackend (NoLoggingT (ResourceT IO)) a -> m a
-runDB action = runNoLoggingT $ withPostgresqlPool connStr 32 (liftIO . runSqlPersistMPool action)
+runDB action = runNoLoggingT $ withPostgresqlPool connStr 1 (liftIO . runSqlPersistMPool action)
 
 runSeed :: IO ()
 runSeed = runLogDB $ do
   runMigration migrateAll
-  seed
+  seedRelation
 
 -- | とりあえず10万件。
 seedSize :: Int
 seedSize = 100000
 
 -- | ランダムなデータを挿入。
-seed :: ReaderT SqlBackend (NoLoggingT (ResourceT IO)) ()
-seed = do
+seedRelation :: ReaderT SqlBackend (NoLoggingT (ResourceT IO)) ()
+seedRelation = do
   let -- シード固定の疑似乱数値を挿入。
     ageGen = mkStdGen 8591
     costGen = mkStdGen 8198
     randomAges = take seedSize $ randomRs (18, 65) ageGen
     randomCosts = take seedSize $ randomRs (0, 100) costGen
     userArgs = zip3 [(1 :: Int) .. 1000000] randomAges randomCosts
-    users :: [User] = mkUser <$> userArgs
-  insertMany_ users
+  mapConcurrently_ insertUser userArgs
 
--- | 抽象から具体的なデータ生成。
--- 別テーブル方式とJSON方式で実装が異なる。
-mkUser :: (Int, Int, Int) -> User
-mkUser (i, age, cost) = User ("User" <> T.pack (show i)) age (JSONB (object ["cost" .= cost]))
+-- | 抽象から具体的なデータを挿入。
+-- userIdが必要なので`insertMany`は使えない。
+insertUser :: (BaseBackend backend ~ SqlBackend, MonadIO m, PersistStoreWrite backend, Show a) => (a, Int, Int) -> ReaderT backend m ()
+insertUser (i, age, cost) = do
+  userId <- insert $ User ("User" <> T.pack (show i)) age
+  insert_ $ UserExtraInt userId "cost" cost
 
 benchLookup :: IO ()
 benchLookup =
   defaultMain
   [
-    bgroup "lookupUser"
-    [ bench "user 1" $ whnfIO $ runDB $ lookupUser (toSqlKey 1)
-    , bench "user 500000" $ whnfIO $ runDB $ lookupUser (toSqlKey 500000)
-    , bench "user 1000000" $ whnfIO $ runDB $ lookupUser (toSqlKey 1000000)
+    bgroup "lookupUserRelation"
+    [ bench "user 1" $ whnfIO $ runDB $ lookupUserRelation (toSqlKey 1)
+    , bench "user 500000" $ whnfIO $ runDB $ lookupUserRelation (toSqlKey 500000)
+    , bench "user 1000000" $ whnfIO $ runDB $ lookupUserRelation (toSqlKey 1000000)
     ]
   ]
 
--- | 別テーブル方式とJSON方式で実装が異なる。
-lookupUser :: (BaseBackend backend ~ SqlBackend, MonadIO m,  PersistUniqueRead backend) => UserId -> ReaderT backend m (Maybe User)
-lookupUser = get
+lookupUserRelation :: (BaseBackend backend ~ SqlBackend, MonadIO m, PersistUniqueRead backend) => UserId -> ReaderT backend m (Maybe User, Maybe (Entity UserExtraInt))
+lookupUserRelation userId = do
+  user <- get userId
+  cost <- getBy $ UniqueUserIdName userId "cost"
+  return (user, cost)
+  -- get userId
