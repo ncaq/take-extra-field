@@ -54,7 +54,8 @@ library
       TemplateHaskell
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -j
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
     , criterion
     , monad-logger
     , mtl
@@ -96,7 +97,8 @@ executable take-extra-field-exe
       TemplateHaskell
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -j -threaded -rtsopts -with-rtsopts=-N -O2
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
     , criterion
     , monad-logger
     , mtl
@@ -140,7 +142,8 @@ test-suite take-extra-field-test
       TemplateHaskell
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wpartial-fields -Wredundant-constraints -j -threaded -rtsopts -with-rtsopts=-N
   build-depends:
-      base >=4.7 && <5
+      aeson
+    , base >=4.7 && <5
     , criterion
     , monad-logger
     , mtl

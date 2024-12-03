@@ -4,20 +4,20 @@ module Lib
     , benchLookup
     ) where
 
+import           Data.Aeson
 import           Control.Monad.IO.Class
 import           Control.Monad.Logger
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Resource
 import           Criterion.Main
-import           Data.Text                    (Text)
 import qualified Data.Text                    as T
 import           Database.Persist
 import           Database.Persist.Postgresql
 import           Model
 import           System.Random
-import           UnliftIO.Async
 
 someFunc :: IO ()
+-- someFunc = runSeed
 someFunc = benchLookup
 
 connStr :: ConnectionString
@@ -47,13 +47,13 @@ seed = do
     randomAges = take seedSize $ randomRs (18, 65) ageGen
     randomCosts = take seedSize $ randomRs (0, 100) costGen
     userArgs = zip3 [(1 :: Int) .. 1000000] randomAges randomCosts
-  mapConcurrently_ (\(i, age, cost) -> insertUser ("User" <> T.pack (show i)) age cost) userArgs
+    users :: [User] = mkUser <$> userArgs
+  insertMany_ users
 
--- | 別テーブル方式とJSON方式で実装が異なる。
-insertUser :: (BaseBackend backend ~ SqlBackend, MonadIO m, PersistStoreWrite backend) => Text -> Int -> Int -> ReaderT backend m ()
-insertUser name age cost = do
-  userId <- insert $ User name age
-  insert_ $ UserExtraInt userId "cost" cost
+-- | 抽象から具体的なデータ生成。
+-- 別テーブル方式とJSON方式で実装が異なる。
+mkUser :: (Int, Int, Int) -> User
+mkUser (i, age, cost) = User ("User" <> T.pack (show i)) age (object ["cost" .= cost])
 
 benchLookup :: IO ()
 benchLookup =
@@ -67,8 +67,5 @@ benchLookup =
   ]
 
 -- | 別テーブル方式とJSON方式で実装が異なる。
-lookupUser :: (BaseBackend backend ~ SqlBackend, MonadIO m,  PersistUniqueRead backend) => UserId -> ReaderT backend m (Maybe User, Maybe (Entity UserExtraInt))
-lookupUser userId = do
-  user <- get userId
-  cost <- getBy $ UniqueUserIdName userId "cost"
-  return (user, cost)
+lookupUser :: (BaseBackend backend ~ SqlBackend, MonadIO m,  PersistUniqueRead backend) => UserId -> ReaderT backend m (Maybe User)
+lookupUser = get
