@@ -9,11 +9,12 @@ import           Control.Monad.Logger
 import           Control.Monad.Reader
 import           Control.Monad.Trans.Resource
 import           Criterion.Main
-import qualified Data.Text                          as T
+import           Data.Pool
+import qualified Data.Text                    as T
 import           Database.Persist.Postgresql
 import           Model
 import           System.Random
-import UnliftIO
+import           UnliftIO
 
 someFunc :: IO ()
 -- someFunc = runSeed
@@ -22,11 +23,17 @@ someFunc = benchLookup
 connStr :: ConnectionString
 connStr = "host=localhost port=5432 user=test dbname=test password=test"
 
+connSize :: Int
+connSize = 1
+
 runLogDB :: MonadUnliftIO m => ReaderT SqlBackend (NoLoggingT (ResourceT IO)) a -> m a
 runLogDB action = runStderrLoggingT $ withPostgresqlPool connStr 1 (liftIO . runSqlPersistMPool action)
 
-runDB :: MonadUnliftIO m => ReaderT SqlBackend (NoLoggingT (ResourceT IO)) a -> m a
-runDB action = runNoLoggingT $ withPostgresqlPool connStr 1 (liftIO . runSqlPersistMPool action)
+getPool :: IO (Pool SqlBackend)
+getPool = runNoLoggingT $ createPostgresqlPool connStr connSize
+
+runPoolDB :: (MonadIO m, BackendCompatible SqlBackend backend) => Pool backend -> ReaderT backend (NoLoggingT (ResourceT IO)) a -> m a
+runPoolDB pool action = runNoLoggingT $ liftIO $ runSqlPersistMPool action pool
 
 runSeed :: IO ()
 runSeed = runLogDB $ do
@@ -56,15 +63,15 @@ insertUser (i, age, cost) = do
   insert_ $ UserExtraInt userId "cost" cost
 
 benchLookup :: IO ()
-benchLookup =
+benchLookup = do
+  pool <- getPool
   defaultMain
-  [
-    bgroup "lookupUserRelation"
-    [ bench "user 1" $ whnfIO $ runDB $ lookupUserRelation (toSqlKey 1)
-    , bench "user 500000" $ whnfIO $ runDB $ lookupUserRelation (toSqlKey 500000)
-    , bench "user 1000000" $ whnfIO $ runDB $ lookupUserRelation (toSqlKey 1000000)
+    [ bgroup "lookupUserRelation"
+      [ bench "user 1" $ whnfIO $ runPoolDB pool $ lookupUserRelation (toSqlKey 1)
+      , bench "user 500000" $ whnfIO $ runPoolDB pool $ lookupUserRelation (toSqlKey 500000)
+      , bench "user 1000000" $ whnfIO $ runPoolDB pool $ lookupUserRelation (toSqlKey 1000000)
+      ]
     ]
-  ]
 
 lookupUserRelation :: (BaseBackend backend ~ SqlBackend, MonadIO m, PersistUniqueRead backend) => UserId -> ReaderT backend m (Maybe User, Maybe (Entity UserExtraInt))
 lookupUserRelation userId = do
